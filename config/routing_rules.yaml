@@ -1,0 +1,232 @@
+# ============================================================================
+# AVUKAT AI SKILL — HİBRİT RAG VE KLASÖR YÖNLENDİRME KURALLARI
+# ============================================================================
+# Amaç: Bağlam penceresini şişirmeden, yalnızca uyuşmazlığa temas eden
+# dosyaları yüklemek. Model tüm kütüphaneyi değil, 4-12 dosya okur.
+#
+# NOT: Bu dosyadaki dosya yolları projenin GERÇEK dizin yapısına göre
+# düzeltilmiştir. Aşağıdaki "mevcut_yol" notları, orijinal taslaktaki
+# yolların bu depodaki karşılıklarını gösterir.
+# ============================================================================
+version: "2.1"
+engine_mode: "two_pass_state_machine"
+updated: "2026-11-13"
+
+# ----------------------------------------------------------------------------
+# 0. DİZİN HARİTASI (yol çevirisi)
+# ----------------------------------------------------------------------------
+path_map:
+  # Orijinal taslak yolu -> bu depodaki gerçek yol
+  "02_normatif_mevzuat/01_ust_normlar/tc_anayasasi_gerekceli.md": "02_normatif_mevzuat/01_ust_normlar/2709_Anayasa.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/hayata_karsi_suclar_m81_85.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/hayata_karsi_suclar_m76_85.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/vucut_dokunulmazligi_m86_93.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/vucut_dokunulmazligi_m86_93.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/hurriyete_karsi_suclar_m106_124.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/hurriyete_karsi_suclar_m106_124.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/serefe_karsi_suclar_m125_131.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/serefe_karsi_suclar_m125_131.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/ozel_hayata_karsi_suclar_m132_140.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/ozel_hayata_karsi_suclar_m132_140.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/malvarligina_karsi_suclar_m141_169.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/malvarligina_karsi_suclar_m141_169.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/bilisim_suclari_m243_246.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/bilisim_suclari_m243_246.md"
+  "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_ozel_hukumler_m76_345/kamu_idare_ve_adalet_suclari.md": "02_normatif_mevzuat/02_ceza_maddi_hukuk/kamu_idare_ve_adalet_suclari_m247_339.md"
+  "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_delil_hukuku.md": "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_delil_hukuku_m145_217.md"
+  "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_koruma_tedbirleri.md": "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_koruma_tedbirleri_m90_144.md"
+  "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_kanun_yollari.md": "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_kanun_yollari_m260_323.md"
+  "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_ozel_muhakeme_usulleri.md": "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_ozel_muhakeme_m250_255.md"
+  "02_normatif_mevzuat/03_ceza_muhakemesi_usul/infaz_kanunu_5275.md": "02_normatif_mevzuat/04_diger_kanunlar/5275_CGTIHK_Infaz_Kanunu.md"
+  "05_dilekce_sablonlari/istinaf_basvuru_dilekcesi.md": "05_dilekce_sablonlari/istinaf_basvuru.md"
+  "05_dilekce_sablonlari/temyiz_dilekcesi.md": "05_dilekce_sablonlari/temyiz.md"
+  "05_dilekce_sablonlari/esas_hakkinda_mutalaaya_beyan_savunma.md": "05_dilekce_sablonlari/esas_hakkinda_savunma.md"
+
+# ----------------------------------------------------------------------------
+# 1. GLOBAL VE ZORUNLU BAĞLAM
+# ----------------------------------------------------------------------------
+global_context:
+  stage_1_questioning:
+    always_load:
+      - "SKILL.md"
+      - "01_sistem_is_akislari/01_bes_soru_algoritmasi.md"
+      - "01_sistem_is_akislari/03_usul_kontrol_listesi.md"
+    max_chunks: 4
+    temperature: 0.15
+
+  stage_2_drafting:
+    always_load:
+      - "01_sistem_is_akislari/02_suc_inceleme_metodolojisi.md"
+      - "01_sistem_is_akislari/04_dilekce_yazim_standartlari.md"
+      - "02_normatif_mevzuat/01_ust_normlar/2709_Anayasa.md"
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/tck_genel_hukumler_m1_75.md"
+      - "config/citation_validator.json"
+    max_chunks: 12
+    temperature: 0.10
+
+# ----------------------------------------------------------------------------
+# 2. MUHAKEME AŞAMASI ROTALARI
+# ----------------------------------------------------------------------------
+procedural_routes:
+  sorusturma_sikayet:
+    description: "Savcılık şikayet, suç duyurusu veya KYOK itirazı"
+    trigger_keywords: ["şikayet", "suç duyurusu", "savcılık", "karakol", "ifade", "kyok", "takipsizlik", "kovuşturmaya yer olmadığı"]
+    load_legislation:
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_delil_hukuku_m145_217.md"
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_ozel_muhakeme_m250_255.md"
+    load_templates:
+      - "05_dilekce_sablonlari/cumhuriyet_bassavciligi_sikayet.md"
+      - "05_dilekce_sablonlari/kyok_itiraz.md"
+    sure_notu: "KYOK itirazı CMK m. 173 — İKİ HAFTA (tebliğden)"
+
+  koruma_tedbirleri_tutuklama:
+    description: "Gözaltı, tutuklamaya itiraz, adli kontrol, arama ve elkoyma"
+    trigger_keywords: ["tutuklama", "tutuklu", "sulh ceza", "adli kontrol", "imza", "yurt dışı çıkış", "arama", "el koyma", "elkoyma", "telefon inceleme"]
+    load_legislation:
+      - "02_normatif_mevzuat/01_ust_normlar/2709_Anayasa.md"
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_koruma_tedbirleri_m90_144.md"
+      - "02_normatif_mevzuat/05_kritik_yonetmelikler/adli_ve_onleme_aramalari_yonetmeligi.md"
+    load_doctrine:
+      - "03_doktrin_ve_serhler/usul_itiraz_rehberleri/usulsuz_arama_itirazi.md"
+    load_templates:
+      - "05_dilekce_sablonlari/sulh_ceza_tutukluluga_itiraz.md"
+    sure_notu: "Tutuklamaya itiraz CMK m. 268 — İKİ HAFTA"
+
+  kovusturma_esas_savunma:
+    description: "İlk derece mahkemesinde savunma ve mütalaaya beyan"
+    trigger_keywords: ["iddianame", "duruşma", "mahkeme", "mütalaa", "esas hakkında", "savunma", "beraat", "sanık", "katılan"]
+    load_legislation:
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_kovusturma_ve_hukum_m170_231.md"
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_delil_hukuku_m145_217.md"
+      - "02_normatif_mevzuat/04_diger_kanunlar/5275_CGTIHK_Infaz_Kanunu.md"
+    load_templates:
+      - "05_dilekce_sablonlari/esas_hakkinda_savunma.md"
+
+  kanun_yollari_istinaf_temyiz:
+    description: "BAM (İstinaf), Yargıtay (Temyiz), AYM bireysel başvuru"
+    trigger_keywords: ["istinaf", "bölge adliye", "bam", "temyiz", "yargıtay", "bozma", "gerekçeli karar", "ceza aldım", "mahkumiyet", "hagb", "bireysel başvuru", "aym"]
+    load_legislation:
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_kanun_yollari_m260_323.md"
+    load_templates:
+      - "05_dilekce_sablonlari/istinaf_basvuru.md"
+      - "05_dilekce_sablonlari/temyiz.md"
+    sure_notu: "İstinaf CMK m. 273 ve Temyiz CMK m. 291 — her ikisi de İKİ HAFTA"
+    kritik_not: "HAGB kararına karşı İTİRAZ değil İSTİNAF (CMK m. 231/12, 7499 s.K.) — aşağıdaki banned listesine bak"
+
+# ----------------------------------------------------------------------------
+# 3. SUÇ KATEGORİSİ ROTALARI
+# ----------------------------------------------------------------------------
+crime_category_routes:
+  hayata_ve_vucut_dokunulmazligina_karsi:
+    tck_range: ["81", "82", "83", "84", "85", "86", "87", "88", "89"]
+    trigger_keywords: ["öldürme", "cinayet", "yaralama", "darp", "kavga", "bıçak", "silah", "yumruk", "kırık", "adli tıp", "btm", "sabit iz", "trafik kazası", "taksirle"]
+    stage_1_focus_matrix:
+      - "Darbe sayısı, hedef alınan vücut bölgesi (hayati bölge mi?) ve kullanılan aletin elverişliliği → TCK m. 81/35 Öldürmeye Teşebbüs vs TCK m. 86 Kasten Yaralama ayrımı"
+      - "İlk haksız hareketin kimden geldiği → TCK m. 29 Haksız Tahrik vs TCK m. 25 Meşru Savunma ayrımı"
+      - "Adli Tıp Raporu: BTM ile giderilebilir mi, kemik kırığı derecesi (TCK m. 87), yüzde sabit iz / organ işlev kaybı"
+    load_legislation:
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/hayata_karsi_suclar_m76_85.md"
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/vucut_dokunulmazligi_m86_93.md"
+    load_doctrine:
+      - "03_doktrin_ve_serhler/suc_ayrim_matrisleri/yaralama_vs_oldurmeye_tesebbus.md"
+      - "03_doktrin_ve_serhler/suc_genel_teorisi/tck_m25_serh.md"
+      - "03_doktrin_ve_serhler/suc_genel_teorisi/tck_m29_serh.md"
+    load_precedents:
+      - "04_ictihat_ve_emsal_bankasi/yargitay_cgk/"
+      - "04_ictihat_ve_emsal_bankasi/yargitay_daire_kararlari/"
+
+  hurriyete_ve_serefe_karsi:
+    tck_range: ["106", "107", "108", "109", "116", "117", "123", "125", "126", "127", "128", "129", "130", "131"]
+    trigger_keywords: ["tehdit", "şantaj", "cebir", "alıkoyma", "zorla tutma", "konut dokunulmazlığı", "haneye tecavüz", "hakaret", "küfür", "onur", "şeref", "sosyal medya", "ısrarlı takip"]
+    stage_1_focus_matrix:
+      - "Hakaret/tehdidin 'alenen' (TCK m. 125/4) veya 'sesli, yazılı, görüntülü iletiyle' (TCK m. 125/2) işlenip işlenmediği"
+      - "Sözlerin kaba hitap / beddua / eleştiri sınırında kalıp kalmadığı ve karşılıklı hakaret (TCK m. 129/3)"
+      - "Tehdidin silahla, birden fazla kişiyle veya imzasız mektup/özel işaretle (TCK m. 106/2) yapılıp yapılmadığı → UZLAŞTIRMA KAPSAMI DEĞİŞİR"
+    load_legislation:
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/hurriyete_karsi_suclar_m106_124.md"
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/serefe_karsi_suclar_m125_131.md"
+    load_doctrine:
+      - "03_doktrin_ve_serhler/suc_genel_teorisi/tck_m29_serh.md"
+    load_precedents:
+      - "04_ictihat_ve_emsal_bankasi/yargitay_daire_kararlari/"
+
+  malvarligina_karsi_suclar:
+    tck_range: ["141", "142", "143", "145", "148", "149", "151", "152", "155", "157", "158", "160", "165", "167", "168"]
+    trigger_keywords: ["hırsızlık", "çalma", "yağma", "gasp", "dolandırıcılık", "hile", "para gönderdim", "iban", "güveni kötüye kullanma", "emanet", "mala zarar", "zarar giderme", "etkin pişmanlık"]
+    stage_1_focus_matrix:
+      - "Dolandırıcılık (TCK 157-158) vs Hukuki İhtilaf: önceden var olan sözleşme/ticari ilişki ve BAŞLANGIÇTAKİ aldatma kastı"
+      - "Dolandırıcılık vs Güveni Kötüye Kullanma (TCK 155): zilyetliğin hileyle mi rızayla mı devredildiği"
+      - "Gece vakti (TCK m. 143), bilişim/banka aracı (TCK m. 158/1-f → AĞIR CEZA), zararın giderilmesi (TCK m. 168)"
+    load_legislation:
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/malvarligina_karsi_suclar_m141_169.md"
+    load_doctrine:
+      - "03_doktrin_ve_serhler/suc_ayrim_matrisleri/dolandiricilik_vs_hukuki_ihtilaf.md"
+      - "03_doktrin_ve_serhler/suc_genel_teorisi/tck_m21_serh.md"
+    load_precedents:
+      - "04_ictihat_ve_emsal_bankasi/yargitay_cgk/"
+      - "04_ictihat_ve_emsal_bankasi/yargitay_daire_kararlari/"
+
+  ozel_hayat_ve_bilisim_suclari:
+    tck_range: ["132", "133", "134", "135", "136", "138", "243", "244", "245"]
+    trigger_keywords: ["ses kaydı", "görüntü kaydı", "ifşa", "kvkk", "kişisel veri", "gizli kamera", "mesajları yayma", "hesap çalma", "hack", "şifre", "kredi kartı", "banka kartı"]
+    stage_1_focus_matrix:
+      - "Ses/görüntü kaydının, kendisine karşı işlenen ani bir suçu kanıtlamak için (başka türlü delil imkânı yokken) alınıp alınmadığı"
+      - "Bilişim sistemine girip kalma (TCK m. 243) / veri değiştirme (TCK m. 244) / haksız çıkar (TCK m. 244/4 vs TCK m. 158/1-f)"
+    load_legislation:
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/ozel_hayata_karsi_suclar_m132_140.md"
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/bilisim_suclari_m243_246.md"
+    load_doctrine:
+      - "03_doktrin_ve_serhler/usul_itiraz_rehberleri/usulsuz_arama_itirazi.md"
+    load_precedents:
+      - "04_ictihat_ve_emsal_bankasi/yargitay_cgk/"
+
+  kamu_guveni_ve_adliyeye_karsi_suclar:
+    tck_range: ["204", "207", "210", "247", "250", "252", "257", "265", "267", "271", "272", "281"]
+    trigger_keywords: ["sahte", "sahtecilik", "imza", "senet", "çek", "evrakta sahtecilik", "iftira", "yalan tanıklık", "görevi kötüye kullanma", "polise mukavemet", "görevi yaptırmamak için direnme"]
+    stage_1_focus_matrix:
+      - "Sahtecilikte belgenin 'iğfal kabiliyeti' (aldatma yeteneği) ve resmî belge (TCK m. 204) / özel belge (TCK m. 207) ayrımı"
+      - "İftira (TCK m. 267): fail mağdurun suçsuz olduğunu 'bilerek' mi hareket etti → Anayasal şikayet hakkı sınırı"
+    load_legislation:
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/kamu_idare_ve_adalet_suclari_m247_339.md"
+      - "02_normatif_mevzuat/02_ceza_maddi_hukuk/guven_ve_kamunun_sagligi_m170_197.md"
+    load_precedents:
+      - "04_ictihat_ve_emsal_bankasi/yargitay_daire_kararlari/"
+
+# ----------------------------------------------------------------------------
+# 4. ÖZEL HUKUK ROTALARI
+# ----------------------------------------------------------------------------
+civil_routes:
+  alacak_tazminat:
+    trigger_keywords: ["alacak", "tazminat", "borç", "ödemedi", "icra", "itirazın iptali", "menfi tespit"]
+    load_legislation:
+      - "02_normatif_mevzuat/04_diger_kanunlar/6098_TBK_Turk_Borclar_Kanunu.md"
+      - "02_normatif_mevzuat/04_diger_kanunlar/2004_IIK_Icra_ve_Iflas_Kanunu.md"
+      - "02_normatif_mevzuat/04_diger_kanunlar/6100_HMK_Hukuk_Muhakemeleri_Kanunu.md"
+    load_workflows:
+      - "01_sistem_is_akislari/05_ozel_hukuk_varyanti.md"
+      - "Workflows/DilekceYaz.md"
+
+  is_hukuku:
+    trigger_keywords: ["işçi", "işveren", "kıdem", "ihbar", "işe iade", "mobbing", "fazla mesai", "ücret"]
+    load_legislation:
+      - "02_normatif_mevzuat/04_diger_kanunlar/4857_Is_Kanunu.md"
+      - "02_normatif_mevzuat/04_diger_kanunlar/7036_Is_Mahkemeleri_Kanunu.md"
+    sure_notu: "İşe iade İşK m. 20 — 1 ay; arabuluculuk dava şartı (7036 m. 3)"
+
+# ----------------------------------------------------------------------------
+# 5. ÇAPRAZ KESEN TETİKLEYİCİLER
+# ----------------------------------------------------------------------------
+cross_cutting_injections:
+  - name: "uzlastirma_kontrolu"
+    when_tck_in: ["86/1", "86/2", "88", "89", "106/1", "107/1", "116", "123", "125", "132", "133", "134", "141", "151/1", "155/1", "157/1"]
+    inject_files:
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_ozel_muhakeme_m250_255.md"
+    mandatory_warning: "Bu suç CMK m. 253 kapsamında uzlaştırmaya tabidir. Ancak uzlaştırmaya tabi olmayan bir suçla birlikte işlenmişse CMK m. 253/3 uyarınca uzlaştırma UYGULANMAZ."
+
+  - name: "onodeme_ve_seri_muhakeme_kontrolu"
+    when_tck_in: ["125/3-b", "154/1", "179/2", "179/3", "286"]
+    inject_files:
+      - "02_normatif_mevzuat/03_ceza_muhakemesi_usul/cmk_ozel_muhakeme_m250_255.md"
+
+# ----------------------------------------------------------------------------
+# 6. SINIRDAŞ KURALLAR
+# ----------------------------------------------------------------------------
+guardrails:
+  max_files_per_query: 14
+  precedence: "spesifik route > global_context"
+  if_no_route_matches: "yükle: global_context.stage_*_always_load + kullanıcıya suç tipini sor"
+  never_load:
+    - "Kanunlar/md/*.md (tam kanun metinleri — yalnızca Granüler arama için, Read ile aralık oku)"

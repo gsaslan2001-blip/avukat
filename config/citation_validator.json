@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "validator_name": "turk_hukuku_atif_ve_usul_dogrulayici",
+  "version": "2.1.0",
+  "strict_mode": true,
+  "updated": "2026-11-13",
+
+  "_kaynak_notu": "Tüm süre ve görev kuralları Kanunlar/md/ altındaki resmî metinlerden doğrulanmıştır (CMK 6100→5271, 5235, TCK 5237). Değişiklik: 16/7/2026-7589 s.K. dâhil.",
+
+  "hallucination_guardrails": {
+    "allow_unverified_case_numbers": false,
+    "require_rag_source_match_for_ek_numbers": true,
+    "action_on_unverified_case_number": "REPLACE_WITH_PRINCIPLE_TEMPLATE",
+    "fallback_principle_templates": {
+      "yargitay_cgk": "Yargıtay Ceza Genel Kurulu'nun süreklilik kazanan yerleşik içtihatlarında istikrarlı biçimde vurgulandığı üzere",
+      "yargitay_daire": "Yargıtay ilgili Ceza Dairesi'nin yerleşik uygulamalarında ve emsal kararlarında kabul edildiği üzere",
+      "aym_bireysel": "Anayasa Mahkemesi'nin bireysel başvuru kararlarında ortaya koyduğu anayasal ilkeler uyarınca"
+    }
+  },
+
+  "regex_patterns": {
+    "yargitay_ibk": "^Yargıtay\\s+İBK,\\s*\\d{2}\\.\\d{2}\\.\\d{4}\\s+T\\.,\\s*\\d{4}/\\d+\\s+E\\.,\\s*\\d{4}/\\d+\\s+K\\.$",
+    "yargitay_cgk": "^Yargıtay\\s+CGK,\\s*(E\\.\\s*)?\\d{4}/(\\d+-)?\\d+,\\s*(K\\.\\s*)?\\d{4}/\\d+$",
+    "yargitay_daire": "^Yargıtay\\s+([1-9]|1[0-9]|2[0-3])\\.\\s*CD,\\s*(E\\.\\s*)?\\d{4}/\\d+,\\s*(K\\.\\s*)?\\d{4}/\\d+$",
+    "tck_madde": "^TCK\\s+m\\.\\s*([1-9]|[1-2][0-9]{2}|3[0-3][0-9]|34[0-5])(/[1-9])?(-[a-zçğıöşü])?$",
+    "cmk_madde": "^CMK\\s+m\\.\\s*([1-9]|[1-2][0-9]{2}|3[0-2][0-9]|33[0-5])(/[1-9])?(-[a-zçğıöşü])?$"
+  },
+
+  "banned_repealed_laws_and_outdated_rules": [
+    {
+      "id": "MULGA_765_TCK",
+      "forbidden_patterns": ["765 sayılı", "ETCK", "mülga 765", "456. madde", "503. madde"],
+      "error_message": "765 sayılı eski Türk Ceza Kanunu mülga olmuştur. Yürürlükteki 5237 sayılı TCK maddelerine atıf yapılmalıdır (yalnızca lehe kanun karşılaştırması için 5252 sayılı Yürürlük Kanunu m. 9'a atıf yapılabilir)."
+    },
+    {
+      "id": "MULGA_1412_CMUK",
+      "forbidden_patterns": ["1412 sayılı", "CMUK m.", "CMUK'un"],
+      "error_message": "1412 sayılı CMUK mülga olmuştur. Yürürlükteki 5271 sayılı CMK hükümleri kullanılmalıdır."
+    },
+    {
+      "id": "GUNCEL_HAGB_KANUN_YOLU_7499_SK",
+      "forbidden_patterns": [
+        "HAGB kararına karşı nöbetçi ağır ceza mahkemesine itiraz",
+        "hükmün açıklanmasının geri bırakılmasına itiraz dilekçesi"
+      ],
+      "error_message": "CMK m. 231/12 (Değişik: 2/3/2024-7499/15 md.) uyarınca HAGB kararına karşı İTİRAZ değil İSTİNAF (Bölge Adliye Mahkemesi) yoluna başvurulur.",
+      "verified_source": "Kanunlar/md/5271_CMK_Ceza_Muhakemesi_Kanunu.md → Madde 231/12"
+    },
+    {
+      "id": "SURE_IKI_HAFTA",
+      "forbidden_patterns": [
+        "7 gün içinde itiraz",
+        "yedi gün içinde itiraz",
+        "bir hafta içinde itiraz",
+        "15 gün içinde itiraz",
+        "15 gün içinde istinaf",
+        "15 gün içinde temyiz",
+        "7 gün içinde istinaf",
+        "7 gün içinde temyiz",
+        "15 günlük süre",
+        "7 günlük süre"
+      ],
+      "error_message": "Kanun yolu süreleri İKİ HAFTADIR. Doğrulanmış hükümler: CMK m. 268 (itiraz), m. 273 (istinaf), m. 291 (temyiz), m. 173 (KYOK itirazı) — hepsi 'iki hafta'. '7 gün' veya '15 gün' ifadeleri yanlıştır.",
+      "verified_source": "Kanunlar/md/5271_CMK_Ceza_Muhakemesi_Kanunu.md → Madde 173, 268, 273, 291"
+    },
+    {
+      "id": "SURE_SIKAYET_ALTI_AY",
+      "forbidden_patterns": ["6 aylık şikayet süresi yerine 3 ay", "şikayet süresi 3 ay"],
+      "error_message": "Takibi şikayete bağlı suçlarda şikayet süresi TCK m. 73/1 uyarınca ALTI AYDIR.",
+      "verified_source": "Kanunlar/md/5237_TCK_Turk_Ceza_Kanunu.md → Madde 73"
+    }
+  ],
+
+  "court_jurisdiction_matrix_5235_sk": {
+    "_dogrulama_notu": "Bu matris 5235 sayılı Kanun m. 10-13 ve TCK maddelerinin ceza miktarları karşılaştırılarak hazırlanmıştır. Kesin görev tespiti için dava konusu suçun üst sınırı mutlaka hesaplanmalıdır.",
+
+    "agir_ceza_mahkemesi": {
+      "statute": "5235 sayılı Kanun m. 12",
+      "kural_1": "Ağırlaştırılmış müebbet, müebbet veya ON YILDAN FAZLA hapis cezası gerektiren suçlar → Ağır Ceza (en güvenilir ölçüt)",
+      "kural_2": "5235 m. 12'de sayılan katalog suçlar",
+      "katalog_suclar": [
+        "TCK m. 148 — Yağma (nitelikli halleri m. 149 ile birlikte)",
+        "TCK m. 250/1 ve 2 — İrtikâp",
+        "TCK m. 204/2 — Resmî belgede sahtecilik (kamu görevlisi)",
+        "TCK m. 161 — Hileli iflâs",
+        "TCK İkinci Kitap Dördüncü Kısmı Dört, Beş, Altı ve Yedinci Bölüm (m. 247-339 arası; 318, 319, 324, 325, 332 hariç)",
+        "3713 sayılı Terörle Mücadele Kanunu kapsamındaki suçlar",
+        "TCK m. 81, 82 — Kasten öldürme (müebbet)",
+        "TCK m. 188 (uyuşturucu ticareti, üst sınır 20 yıl), m. 190",
+        "TCK m. 302-339 — Devlete karşı suçlar (müebbet / 10+ yıl)",
+        "TCK m. 102/2, m. 103/2 — Nitelikli cinsel suçlar (üst sınır 10+ yıl)"
+      ],
+      "dikkat": "TCK m. 158 (nitelikli dolandırıcılık) 5235 m. 12'de SAYILMAMIŞTIR. Temel ceza üst sınırı 10 yıldır → kural olarak ASLİYE CEZA. Yalnızca TCK m. 158/3'teki ağırlaştırma (3+ kişi birlikte → yarı oranında artırım; örgüt faaliyeti → bir kat artırım) uygulanırsa üst sınır 10 yılı aşabilir ve AĞIR CEZA görevli olur. Bu hesap HER DOSYADA yapılmalıdır."
+    },
+
+    "asliye_ceza_mahkemesi": {
+      "statute": "5235 sayılı Kanun m. 11",
+      "scope": "Ağır Ceza ve Sulh Ceza Hâkimliği görevleri dışında kalan, üst sınırı 10 yıl veya daha az hapis cezası gerektiren suçlar"
+    },
+
+    "sulh_ceza_hakimligi": {
+      "statute": "5235 sayılı Kanun m. 10 ve CMK m. 162-163",
+      "scope": [
+        "Soruşturma evresinde tutuklama, adli kontrol, arama, elkoyma kararları",
+        "KYOK kararlarına itiraz (CMK m. 173) — itiraz mercîi, dava açılmaz",
+        "Basit yargılama usulü kapsamındaki hükümlere itiraz (CMK m. 252)",
+        "İdari yaptırım / Kabahatler Kanunu başvuruları"
+      ],
+      "never_assign_trial_of_crimes": true
+    }
+  },
+
+  "sure_matrisi_dogrulanmis": {
+    "_veri_kaynagi": "Kanunlar/md/5271_CMK_Ceza_Muhakemesi_Kanunu.md ve 5237_TCK_Turk_Ceza_Kanunu.md resmî metinlerinden birebir alınmıştır.",
+    "sikayet_hakki": { "sure": "6 ay", "dayanak": "TCK m. 73/1", "baslangic": "fiil ve failin öğrenilmesi" },
+    "kyok_itirazi": { "sure": "2 hafta", "dayanak": "CMK m. 173/1", "baslangic": "tebliğ" },
+    "itiraz_genel": { "sure": "2 hafta", "dayanak": "CMK m. 268/1", "baslangic": "kararın öğrenilmesi" },
+    "tutuklamaya_itiraz": { "sure": "2 hafta", "dayanak": "CMK m. 268 (genel itiraz süresi)", "baslangic": "kararın öğrenilmesi" },
+    "istinaf": { "sure": "2 hafta", "dayanak": "CMK m. 273/1", "baslangic": "gerekçeli hükmün tebliği" },
+    "temyiz": { "sure": "2 hafta", "dayanak": "CMK m. 291/1", "baslangic": "gerekçeli hükmün tebliği" },
+    "basit_yargilamaya_itiraz": { "sure": "2 hafta", "dayanak": "CMK m. 252 (m. 268 atfı)", "baslangic": "tebliğ" },
+    "aym_bireysel_basvuru": { "sure": "30 gün", "dayanak": "6216 sayılı Kanun m. 47", "baslangic": "öğrenme" },
+    "idari_dava": { "sure": "60 gün", "dayanak": "İYUK m. 7", "baslangic": "tebliğ" },
+    "idari_istinaf_temyiz": { "sure": "30 gün", "dayanak": "İYUK m. 45, 46", "baslangic": "tebliğ" },
+    "odeme_emrine_itiraz": { "sure": "7 gün", "dayanak": "İİK m. 60/3", "baslangic": "ödeme emrinin tebliği" },
+    "ise_iade": { "sure": "1 ay", "dayanak": "İşK m. 20", "baslangic": "fesih tebliği" }
+  },
+
+  "mandatory_petition_checklist": {
+    "require_makam_header": true,
+    "require_procedural_section_before_merits": true,
+    "require_mens_rea_and_actus_reus_split": true,
+    "require_constitutional_articles": ["Anayasa m. 36", "Anayasa m. 38"],
+    "require_terditli_sonuc_ve_istem": true,
+    "require_ek_list_matches_citations": true,
+    "require_verified_yargitay_citation": true
+  },
+
+  "cikis_kodlari": {
+    "0": "Doğrulandı — dilekçeye konabilir",
+    "1": "Teyit edilemedi — dilekçeye KONULAMAZ, ilkesel atfa geç",
+    "2": "API erişim hatası — bekleyip yeniden dene; doğrulanmamış say"
+  },
+
+  "anti_patternler": [
+    {
+      "ad": "Sahte künye",
+      "ornek": "Yargıtay 4. CD, 2021/1452 E., 2022/8912 K.",
+      "sorun": "Numara eğitim verisinden üretilmiş, kaynakta yok",
+      "cozum": "bun TOOLS/EmsalBul.ts --dogrula ile teyit et veya ilkesel atıf yap"
+    },
+    {
+      "ad": "Görev hatası — dolandırıcılık",
+      "ornek": "TCK m. 158 → her durumda Ağır Ceza",
+      "sorun": "m. 158 temel cezası 3-10 yıl → Asliye Ceza. Ağır Ceza yalnızca m. 158/3 ağırlaştırması üst sınırı 10 yılı aşarsa.",
+      "cozum": "Her dosyada suçun üst sınırını 5235 m. 12 ve m. 11'e göre yeniden hesapla"
+    },
+    {
+      "ad": "Mülga madde",
+      "ornek": "765 sayılı TCK m. 456",
+      "sorun": "Yürürlükten kalkmış kanun",
+      "cozum": "5237 sayılı TCK güncel metnini Kanunlar/md/ üzerinden doğrula"
+    },
+    {
+      "ad": "Süre hatası",
+      "ornek": "'7 gün içinde itiraz' / '15 gün içinde temyiz'",
+      "sorun": "Yürürlükteki süre 2 haftadır",
+      "cozum": "CMK m. 173, 268, 273, 291 → hepsi 'iki hafta'"
+    },
+    {
+      "ad": "Uydurma vakıa",
+      "ornek": "Kullanıcı bahsetmediği hâlde 'olay yerinde kamera kaydı bulunmaktadır'",
+      "sorun": "Somutlaştırma yükü ihlali",
+      "cozum": "[... kamera kaydı celbi talep edilmiştir] yer tutucusu kullan"
+    }
+  ]
+}
